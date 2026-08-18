@@ -54,7 +54,52 @@ Modelos comparados:
 | RandomForest | ForecasterRecursive, 24 lags, n_estimators=100 |
 | Ridge | ForecasterRecursive, 24 lags |
 
-## Resultados (São Paulo, 2010–2024)
+## Resultados por Cidade (2010–2024)
+
+Melhor modelo de cada capital, por sMAPE (backtesting rolling origin, 1.452 previsões por modelo/cidade):
+
+| Cidade | UF | Região | Melhor modelo | MAE | RMSE | sMAPE (%) |
+|---|---|---|---:|---:|---:|---:|
+| Manaus | AM | North | XGBoost | 324 | 506 | 65,5 |
+| Salvador | BA | Northeast | XGBoost | 508 | 803 | 72,1 |
+| Brasília | DF | Midwest | CatBoost | 3.887 | 12.393 | 76,6 |
+| Fortaleza | CE | Northeast | CatBoost | 1.955 | 3.144 | 77,5 |
+| São Paulo | SP | Southeast | CatBoost | 9.892 | 43.838 | 78,7 |
+| Recife | PE | Northeast | RandomForest | 1.226 | 1.954 | 81,2 |
+| Belo Horizonte | MG | Southeast | XGBoost | 9.158 | 20.584 | 88,7 |
+| Rio de Janeiro | RJ | Southeast | XGBoost | 7.554 | 16.234 | 119,7 |
+
+## Resultados por Região
+
+As séries municipais são somadas por região e os modelos são retreinados sobre o agregado.
+Composição: **Southeast** = São Paulo + Rio de Janeiro + Belo Horizonte; **Northeast** = Fortaleza + Recife + Salvador; **Midwest** = Brasília; **North** = Manaus.
+
+sMAPE (%) por modelo:
+
+| Região | CatBoost | XGBoost | RandomForest | SARIMAX | LightGBM |
+|---|---:|---:|---:|---:|---:|
+| North | 70,9 | **65,5** | 67,9 | 99,7 | 94,8 |
+| Northeast | **71,0** | 76,6 | 80,9 | 75,1 | 84,4 |
+| Midwest | **76,6** | 83,7 | 82,4 | 103,2 | 100,5 |
+| Southeast | 92,2 | **85,2** | 95,6 | 113,1 | 127,2 |
+
+MAE por modelo:
+
+| Região | CatBoost | XGBoost | RandomForest | SARIMAX | LightGBM |
+|---|---:|---:|---:|---:|---:|
+| North | 349 | **324** | 328 | 353 | 524 |
+| Northeast | 3.138 | 3.668 | 4.024 | **2.758** | 4.077 |
+| Midwest | **3.887** | 4.196 | 4.202 | 4.482 | 4.559 |
+| Southeast | **20.051** | 21.920 | 22.795 | 20.870 | 26.180 |
+
+> **Correção (agosto/2026):** em versões anteriores, Belo Horizonte era carregada do arquivo
+> `dengue_monthly_belo.csv`, cujo slug (`belo`) não existia no dicionário `CITY_META` — que só
+> continha a chave `belo_horizonte`. A cidade aparecia nas tabelas como unidade `Belo`, sem UF nem
+> região, e ficava **fora da agregação do Sudeste**, que somava apenas São Paulo e Rio de Janeiro e
+> desprezava ~1,09 milhão de casos. Todas as métricas regionais do Sudeste foram recalculadas; as
+> das demais regiões não mudaram.
+
+## Resultados Detalhados (São Paulo, 2010–2024)
 
 | Modelo | MAE | RMSE | sMAPE (%) | n_previsões |
 |---|---:|---:|---:|---:|
@@ -117,9 +162,11 @@ python scripts/generate_figures.py
 │   ├── raw/                              # Dados brutos da API InfoDengue
 │   └── processed/                        # Séries mensais processadas
 ├── notebooks/
-│   ├── 01_exploratory_analysis.ipynb     # Análise exploratória
+│   ├── 01_exploratory_analysis.ipynb     # Análise exploratória (STL, ADF, sazonalidade)
 │   ├── 02_benchmark_models.ipynb         # Benchmark dos modelos
-│   └── 03_forecast_future.ipynb          # Previsão futura com o melhor modelo
+│   ├── 03_forecast_future.ipynb          # Previsão futura com o melhor modelo
+│   ├── 04_all_cities_and_region_benchmark.ipynb  # Benchmark das 8 capitais e por região
+│   └── Main.ipynb                        # Notebook original da análise
 ├── results/
 │   ├── comparisons/                      # Comparações entre cidades
 │   └── figures/                          # Figuras geradas
@@ -139,9 +186,9 @@ python scripts/generate_figures.py
 ## Próximos Passos
 
 1. Adicionar variáveis exógenas (temperatura, umidade, índice pluviométrico) via API Mosqlimate
-2. Otimizar hiperparâmetros com `optuna` e `skforecast`
+2. Otimizar hiperparâmetros com `optuna` e `skforecast` — LightGBM e Ridge seguem instáveis com os padrões atuais
 3. Implementar previsão probabilística com intervalos de confiança
-4. Expandir o benchmark para todas as capitais
+4. Expandir o benchmark para as capitais restantes (Sul e demais estados ainda não cobertos)
 5. Desenvolver modelo global multi-série com `ForecasterRecursiveMultiSeries`
 
 ## Referências
